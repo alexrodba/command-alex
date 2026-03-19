@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Command.Alex</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Unbounded:wght@400;700;900&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#f0ede6;--ink:#1a1a14;--ink2:#3a3a2e;--muted:#9a9a8a;--border:#d4d0c6;--card:#faf8f3;
+  --green:#2d6a2d;--yellow:#8a6800;--red:#8a1a00;--blue:#1a4a7a;--accent:#e8380a;
+}
+body{background:var(--bg);color:var(--ink);font-family:'DM Mono',monospace;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.07'/%3E%3C/svg%3E");pointer-events:none;z-index:0;}
+.app{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:28px 20px 80px;}
+
+/* HEADER */
+header{display:grid;grid-template-columns:1fr auto;align-items:end;margin-bottom:32px;padding-bottom:18px;border-bottom:2px solid var(--ink);}
+.logo{font-family:'Unbounded',sans-serif;font-weight:900;font-size:20px;letter-spacing:-1px;}
+.logo span{color:var(--accent);}
+.header-sub{font-size:10px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:2px;}
+.week-num{font-family:'Unbounded',sans-serif;font-weight:700;font-size:16px;text-align:right;}
+.week-lbl{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);text-align:right;}
+
+/* TABS */
+.tabs{display:flex;margin-bottom:28px;border-bottom:2px solid var(--ink);}
+.tab{font-family:'DM Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:2px;padding:10px 18px;background:none;border:none;border-bottom:3px solid transparent;color:var(--muted);cursor:pointer;transition:all .15s;margin-bottom:-2px;}
+.tab:hover{color:var(--ink);}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:500;}
+.panel{display:none;}.panel.active{display:block;}
+
+/* SHARED */
+.section-label{font-size:10px;text-transform:uppercase;letter-spacing:3px;color:var(--muted);margin-bottom:10px;}
+.divider{height:1px;background:var(--border);margin:22px 0;}
+.btn{font-family:'DM Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:2px;padding:10px 18px;border:none;cursor:pointer;transition:all .15s;}
+.btn-primary{background:var(--ink);color:var(--bg);}
+.btn-primary:hover{background:var(--accent);}
+.btn-primary:disabled{background:var(--border);color:var(--muted);cursor:not-allowed;}
+.btn-ghost{background:transparent;color:var(--muted);border:1.5px solid var(--border);}
+.btn-ghost:hover{color:var(--ink);border-color:var(--ink);}
+.spinner{display:inline-block;width:11px;height:11px;border:2px solid var(--border);border-top-color:var(--ink);border-radius:50%;animation:spin .7s linear infinite;margin-right:6px;vertical-align:middle;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.cursor-blink{display:inline-block;width:7px;height:13px;background:var(--accent);animation:blink .8s step-end infinite;vertical-align:text-bottom;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* SUMMARY */
+.summary-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:24px;}
+.summary-box{background:var(--card);border:1.5px solid var(--border);padding:14px;text-align:center;}
+.summary-num{font-family:'Unbounded',sans-serif;font-size:26px;font-weight:900;line-height:1;}
+.summary-num.green{color:var(--green);}.summary-num.yellow{color:var(--yellow);}.summary-num.red{color:var(--red);}.summary-num.grey{color:var(--muted);}
+.summary-lbl{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-top:4px;}
+
+/* AI INSIGHTS */
+.ai-insights{background:var(--ink);color:var(--bg);padding:18px 22px;margin-bottom:24px;border-left:4px solid var(--accent);}
+.ai-insights-title{font-size:9px;text-transform:uppercase;letter-spacing:3px;color:var(--muted);margin-bottom:10px;}
+.ai-insights-text{font-size:12px;line-height:1.85;white-space:pre-wrap;}
+
+/* DASHBOARD */
+.dash-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.dash-title{font-family:'Unbounded',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--muted);}
+.btn-analyze{font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:2px;padding:8px 16px;background:var(--ink);color:var(--bg);border:none;cursor:pointer;transition:all .15s;}
+.btn-analyze:hover{background:var(--accent);}
+.btn-analyze:disabled{background:var(--border);color:var(--muted);cursor:not-allowed;}
+
+.area-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:12px;margin-bottom:24px;}
+.area-card{background:var(--card);border:1.5px solid var(--border);padding:16px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;animation:fadeUp .4s ease both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.area-card:hover{border-color:var(--ink);transform:translateY(-2px);box-shadow:3px 3px 0 var(--ink);}
+.area-card.selected{border-color:var(--accent);box-shadow:3px 3px 0 var(--accent);}
+.area-card.status-green{border-left:4px solid var(--green);}
+.area-card.status-yellow{border-left:4px solid var(--yellow);}
+.area-card.status-red{border-left:4px solid var(--red);}
+.area-card.status-grey{border-left:4px solid var(--muted);}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.card-emoji{font-size:22px;line-height:1;}
+.status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.status-dot.green{background:var(--green);}.status-dot.yellow{background:var(--yellow);}
+.status-dot.red{background:var(--red);animation:pulse 2s ease-in-out infinite;}
+.status-dot.grey{background:var(--muted);}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+.card-name{font-family:'Unbounded',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;}
+.card-status-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
+.card-status-label.green{color:var(--green);}.card-status-label.yellow{color:var(--yellow);}.card-status-label.red{color:var(--red);}.card-status-label.grey{color:var(--muted);}
+.card-bar-wrap{height:3px;background:var(--border);margin-bottom:8px;}
+.card-bar{height:100%;transition:width .8s cubic-bezier(.16,1,.3,1);}
+.card-bar.green{background:var(--green);}.card-bar.yellow{background:var(--yellow);}.card-bar.red{background:var(--red);}.card-bar.grey{background:var(--muted);}
+.card-last{font-size:10px;color:var(--muted);}
+.card-note{font-size:10px;color:var(--ink2);margin-top:6px;line-height:1.5;border-top:1px solid var(--border);padding-top:6px;font-style:italic;}
+.paused-overlay{position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent,transparent 8px,rgba(0,0,0,.03) 8px,rgba(0,0,0,.03) 9px);}
+
+/* DETAIL */
+.detail-panel{background:var(--card);border:1.5px solid var(--ink);padding:22px;margin-bottom:24px;display:none;animation:fadeUp .25s ease;}
+.detail-panel.open{display:block;}
+.detail-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.detail-title{font-family:'Unbounded',sans-serif;font-size:13px;font-weight:700;}
+.detail-close{background:none;border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:11px;padding:4px 10px;cursor:pointer;}
+.detail-close:hover{color:var(--ink);border-color:var(--ink);}
+.detail-body{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.detail-section-title{font-size:9px;text-transform:uppercase;letter-spacing:3px;color:var(--muted);margin-bottom:8px;}
+.status-select,.days-input{font-family:'DM Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:1px;padding:7px 10px;border:1.5px solid var(--border);background:var(--bg);color:var(--ink);cursor:pointer;outline:none;width:100%;}
+.status-select:focus,.days-input:focus{border-color:var(--ink);}
+.note-input{font-family:'DM Mono',monospace;font-size:12px;width:100%;min-height:80px;background:var(--bg);border:1.5px solid var(--border);color:var(--ink);padding:8px 10px;resize:vertical;outline:none;line-height:1.6;}
+.note-input:focus{border-color:var(--ink);}
+.note-input::placeholder{color:var(--muted);}
+
+/* PLAN */
+.mode-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;}
+.mode-chip{padding:10px;border:1.5px solid var(--border);background:var(--card);font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);cursor:pointer;text-align:center;transition:all .15s;}
+.mode-chip.active{border-color:var(--ink);background:var(--ink);color:var(--bg);}
+.plan-areas{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px;}
+.area-chip{padding:6px 12px;border:1.5px solid var(--border);background:var(--card);font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);cursor:pointer;transition:all .15s;user-select:none;}
+.area-chip.active{border-color:var(--ink);color:var(--ink);background:var(--bg);font-weight:500;}
+.input-box{width:100%;background:var(--card);border:1.5px solid var(--border);color:var(--ink);font-family:'DM Mono',monospace;font-size:13px;line-height:1.7;padding:14px;resize:vertical;min-height:110px;outline:none;}
+.input-box:focus{border-color:var(--ink);}
+.input-box::placeholder{color:var(--muted);font-style:italic;}
+.output-box{background:var(--card);border:1.5px solid var(--border);border-left:4px solid var(--accent);padding:20px;line-height:1.8;font-size:12px;white-space:pre-wrap;margin-top:14px;}
+
+/* API KEY SETUP */
+.setup-banner{background:var(--ink);color:var(--bg);padding:16px 20px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.setup-banner p{font-size:11px;line-height:1.6;}
+.setup-banner a{color:var(--accent);}
+.api-key-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;}
+.api-key-input{font-family:'DM Mono',monospace;font-size:12px;padding:8px 12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:var(--bg);outline:none;flex:1;min-width:240px;}
+.api-key-input::placeholder{color:rgba(255,255,255,.4);}
+.api-key-input:focus{border-color:var(--accent);}
+
+/* HABITS */
+.habits-grid{display:grid;gap:10px;}
+.habit-card{background:var(--card);border:1.5px solid var(--border);}
+.habit-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);}
+.habit-name{font-family:'Unbounded',sans-serif;font-size:11px;font-weight:700;}
+.habit-freq-tag{font-size:9px;text-transform:uppercase;letter-spacing:1px;padding:2px 6px;border:1px solid;margin-left:8px;}
+.freq-weekly{color:var(--accent);border-color:var(--accent);}
+.freq-daily{color:var(--blue);border-color:var(--blue);}
+.freq-monthly{color:var(--green);border-color:var(--green);}
+.habit-body{padding:12px 16px;}
+.habit-task{display:flex;align-items:flex-start;gap:10px;font-size:12px;line-height:1.5;margin-bottom:6px;}
+.habit-task input[type=checkbox]{margin-top:2px;accent-color:var(--accent);cursor:pointer;width:14px;height:14px;flex-shrink:0;}
+.habit-task label{cursor:pointer;}
+.habit-task.done label{text-decoration:line-through;color:var(--muted);}
+.progress-bar-wrap{height:2px;background:var(--border);margin-top:10px;}
+.progress-bar{height:100%;background:var(--accent);transition:width .3s;}
+
+/* SETTINGS */
+.settings-section{background:var(--card);border:1.5px solid var(--border);padding:20px;margin-bottom:16px;}
+.settings-title{font-family:'Unbounded',sans-serif;font-size:11px;font-weight:700;margin-bottom:14px;}
+.settings-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;flex-wrap:wrap;}
+.settings-input{font-family:'DM Mono',monospace;font-size:12px;padding:8px 10px;background:var(--bg);border:1.5px solid var(--border);color:var(--ink);outline:none;flex:1;min-width:200px;}
+.settings-input:focus{border-color:var(--ink);}
+.settings-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;}
+.danger-zone{border-color:var(--red);}
+.danger-zone .settings-title{color:var(--red);}
+
+@media(max-width:600px){
+  .detail-body{grid-template-columns:1fr;}
+  .summary-strip{grid-template-columns:repeat(2,1fr);}
+  .tabs .tab{padding:10px 12px;font-size:10px;letter-spacing:1px;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <div class="logo">COMMAND<span>.</span>ALEX</div>
+      <div class="header-sub">Life operations dashboard</div>
+    </div>
+    <div>
+      <div class="week-lbl">Current week</div>
+      <div class="week-num" id="weekNum">—</div>
+    </div>
+  </header>
+
+  <!-- API KEY SETUP BANNER -->
+  <div class="setup-banner" id="setupBanner" style="display:none">
+    <div>
+      <p>To use AI features, add your Anthropic API key. It's stored only in your browser, never sent anywhere else.<br>
+      Get one at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> — free tier works fine for personal use.</p>
+      <div class="api-key-row">
+        <input type="password" class="api-key-input" id="apiKeyInput" placeholder="sk-ant-..." />
+        <button class="btn btn-primary" style="font-size:10px;padding:8px 14px" onclick="saveApiKey()">Save key</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('dashboard',this)">◉ Dashboard</button>
+    <button class="tab" onclick="switchTab('plan',this)">↗ Plan</button>
+    <button class="tab" onclick="switchTab('habits',this)">↺ Habits</button>
+    <button class="tab" onclick="switchTab('settings',this)">⚙ Settings</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="panel active" id="tab-dashboard">
+    <div class="summary-strip" id="summaryStrip"></div>
+    <div id="aiInsights" style="display:none"></div>
+    <div class="dash-header">
+      <span class="dash-title">Area health — click any card to edit</span>
+      <button class="btn-analyze" id="analyzeBtn" onclick="runAnalysis()">◉ AI Analysis</button>
+    </div>
+    <div class="area-grid" id="areaGrid"></div>
+    <div class="detail-panel" id="detailPanel"></div>
+  </div>
+
+  <!-- PLAN -->
+  <div class="panel" id="tab-plan">
+    <div class="section-label">Mode</div>
+    <div class="mode-row">
+      <div class="mode-chip active" data-mode="weekly" onclick="setMode(this)">📅 Weekly</div>
+      <div class="mode-chip" data-mode="focus" onclick="setMode(this)">🎯 Right now</div>
+      <div class="mode-chip" data-mode="review" onclick="setMode(this)">🔍 Review</div>
+    </div>
+    <div class="section-label">Active areas</div>
+    <div class="plan-areas" id="planAreas"></div>
+    <div class="divider"></div>
+    <div class="section-label" id="inputLabel">Brain dump</div>
+    <textarea class="input-box" id="dump" placeholder="What's on your mind, what's urgent, how you're feeling..."></textarea>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn btn-primary" id="runBtn" onclick="runClaude()">→ Generate plan</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('dump').value=''">Clear</button>
+    </div>
+    <div id="planOutput" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:18px;margin-bottom:8px">
+        <span class="section-label" style="margin:0">Your plan</span>
+        <button class="btn btn-ghost" style="font-size:10px;padding:5px 10px" onclick="copyPlan()">Copy</button>
+      </div>
+      <div class="output-box" id="planText"></div>
+      <div style="margin-top:10px">
+        <button class="btn btn-ghost" style="font-size:10px" onclick="pushToAreas()">↑ Update dashboard from this plan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HABITS -->
+  <div class="panel" id="tab-habits">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <span class="section-label" style="margin:0">Weekly & monthly commitments</span>
+      <button class="btn btn-ghost" style="font-size:10px;padding:6px 12px" onclick="toggleAddHabit()">+ Add</button>
+    </div>
+    <div id="addHabitBox" style="display:none;background:var(--card);border:1.5px solid var(--border);padding:16px;margin-bottom:16px">
+      <div class="section-label">New habit</div>
+      <input type="text" id="newHabitName" placeholder="e.g. Record Foc a Terra episode" style="width:100%;background:var(--bg);border:1.5px solid var(--border);color:var(--ink);font-family:'DM Mono',monospace;font-size:12px;padding:8px 10px;outline:none;margin-bottom:8px"/>
+      <select id="newHabitArea" style="width:100%;background:var(--bg);border:1.5px solid var(--border);color:var(--ink);font-family:'DM Mono',monospace;font-size:12px;padding:8px 10px;outline:none;margin-bottom:8px"></select>
+      <select id="newHabitFreq" style="width:100%;background:var(--bg);border:1.5px solid var(--border);color:var(--ink);font-family:'DM Mono',monospace;font-size:12px;padding:8px 10px;outline:none;margin-bottom:12px">
+        <option value="daily">Daily</option><option value="weekly" selected>Weekly</option><option value="monthly">Monthly</option>
+      </select>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" style="font-size:10px;padding:8px 14px" onclick="saveHabit()">Save</button>
+        <button class="btn btn-ghost" style="font-size:10px;padding:8px 14px" onclick="toggleAddHabit()">Cancel</button>
+      </div>
+    </div>
+    <div class="habits-grid" id="habitsGrid"></div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="panel" id="tab-settings">
+    <div class="settings-section">
+      <div class="settings-title">Anthropic API Key</div>
+      <div class="settings-label">Stored locally in your browser only</div>
+      <div class="settings-row">
+        <input type="password" class="settings-input" id="settingsApiKey" placeholder="sk-ant-..." />
+        <button class="btn btn-primary" style="font-size:10px;padding:9px 14px" onclick="saveApiKey()">Save</button>
+      </div>
+      <p style="font-size:10px;color:var(--muted);margin-top:8px">Get a key at <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent)">console.anthropic.com</a>. The free tier covers personal use easily.</p>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">Your context</div>
+      <div class="settings-label" style="margin-bottom:6px">Who you are (used in every AI prompt)</div>
+      <textarea class="settings-input" id="settingsContext" style="min-height:100px;resize:vertical;line-height:1.6" placeholder="e.g. CEO of MarsBased, co-host of Foc a Terra podcast, guitarist in RES!..."></textarea>
+      <button class="btn btn-ghost" style="font-size:10px;padding:8px 14px;margin-top:8px" onclick="saveContext()">Save context</button>
+    </div>
+
+    <div class="settings-section danger-zone">
+      <div class="settings-title">Reset data</div>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:12px">Clear all dashboard state, habits, and check history. Cannot be undone.</p>
+      <button class="btn btn-ghost" style="font-size:10px;color:var(--red);border-color:var(--red)" onclick="resetAll()">Reset everything</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===================== CONFIG =====================
+const AREAS = [
+  { id:'marsbased', label:'MarsBased', emoji:'🚀' },
+  { id:'focaterra', label:'Foc a Terra', emoji:'🎙️' },
+  { id:'band', label:'RES!', emoji:'🎸' },
+  { id:'microplastics', label:'Microplastics', emoji:'🌊' },
+  { id:'awesomehome', label:'Awesome Home', emoji:'🏠' },
+  { id:'sideprojects', label:'Side projects', emoji:'⚡' },
+  { id:'finances', label:'Finances', emoji:'💶' },
+  { id:'gaming', label:'Gaming', emoji:'🎮' },
+  { id:'community', label:'Community', emoji:'🌍' },
+  { id:'personal', label:'Personal', emoji:'🧠' },
+];
+
+const STATUS_META = {
+  green:{ label:'On track' }, yellow:{ label:'Slipping' },
+  red:{ label:'Stalling' }, grey:{ label:'Paused' },
+};
+
+const DEFAULT_HABITS = [
+  { id:'h1', name:'MarsBased weekly review', area:'marsbased', freq:'weekly', tasks:['Check pipeline / CRM','Review team blockers','Next week priorities'], streak:0 },
+  { id:'h2', name:'Foc a Terra — post-production', area:'focaterra', freq:'weekly', tasks:['Post episode clip to Instagram','Schedule social post','Reply to comments'], streak:0 },
+  { id:'h3', name:'RES! practice', area:'band', freq:'weekly', tasks:['Rehearsal or home session'], streak:0 },
+  { id:'h4', name:'Finances check', area:'finances', freq:'monthly', tasks:['Update balances','Check investments','Review credits/loans'], streak:0 },
+];
+
+const SEEDED_AREA_DATA = {
+  marsbased: { status:'green', momentum:80, daysSince:0, note:'Soft rebranding + website rework + new ICP definition. 32h/week.' },
+  focaterra: { status:'yellow', momentum:55, daysSince:1, note:'Recording solid. Social media & shorts automation needed.' },
+  band: { status:'yellow', momentum:45, daysSince:1, note:'Rehearsal next week. Identity question unresolved — old vs new name/brand.' },
+  microplastics: { status:'grey', momentum:30, daysSince:null, note:'' },
+  awesomehome: { status:'grey', momentum:20, daysSince:null, note:'' },
+  sideprojects: { status:'grey', momentum:20, daysSince:null, note:'' },
+  finances: { status:'grey', momentum:20, daysSince:null, note:'' },
+  gaming: { status:'grey', momentum:50, daysSince:null, note:'' },
+  community: { status:'grey', momentum:10, daysSince:null, note:'' },
+  personal: { status:'grey', momentum:40, daysSince:null, note:'' },
+};
+
+const DEFAULT_CONTEXT = `CEO of MarsBased (Barcelona tech consultancy). Co-hosts Foc a Terra (Catalan podcast, weekly). Guitarist/singer in RES! (punk band). Multiple side projects (microplastics.cat, awesome home, etc). Angel investor with 30+ investments. Works 32h/week on MarsBased, one day/week free for other areas.`;
+
+// ===================== STATE =====================
+let areaData = load('alex_areas') || JSON.parse(JSON.stringify(SEEDED_AREA_DATA));
+let habits = load('alex_habits') || JSON.parse(JSON.stringify(DEFAULT_HABITS));
+let checkState = loadChecks();
+let activeAreas = new Set(load('alex_active_areas') || ['marsbased','focaterra','band']);
+let currentMode = 'weekly';
+let selectedArea = null;
+let lastPlanText = '';
+
+function load(key){ try{ const s=localStorage.getItem(key); return s?JSON.parse(s):null; }catch{return null;} }
+function save(key,val){ try{ localStorage.setItem(key,JSON.stringify(val)); }catch{} }
+function loadChecks(){
+  try{
+    const d=load('alex_checks')||{};
+    const wk=getWeekKey(); if(d._wk!==wk) return{_wk:wk}; return d;
+  }catch{return{_wk:getWeekKey()};}
+}
+function getApiKey(){ return localStorage.getItem('alex_api_key')||''; }
+function saveApiKey(){
+  const k=(document.getElementById('apiKeyInput')||document.getElementById('settingsApiKey')).value.trim();
+  if(!k){alert('Paste your API key first.');return;}
+  localStorage.setItem('alex_api_key',k);
+  document.getElementById('setupBanner').style.display='none';
+  if(document.getElementById('settingsApiKey')) document.getElementById('settingsApiKey').value=k;
+  alert('API key saved.');
+}
+function saveContext(){
+  const v=document.getElementById('settingsContext').value.trim();
+  localStorage.setItem('alex_context',v); alert('Context saved.');
+}
+function getUserContext(){ return localStorage.getItem('alex_context')||DEFAULT_CONTEXT; }
+function resetAll(){
+  if(!confirm('Reset ALL data? This cannot be undone.')) return;
+  ['alex_areas','alex_habits','alex_checks','alex_active_areas'].forEach(k=>localStorage.removeItem(k));
+  location.reload();
+}
+
+// ===================== INIT =====================
+function init(){
+  const n=new Date();
+  document.getElementById('weekNum').textContent=`W${getWeekNum(n)} · ${n.getFullYear()}`;
+
+  if(!getApiKey()) document.getElementById('setupBanner').style.display='flex';
+
+  // Settings tab
+  const sk=document.getElementById('settingsApiKey');
+  if(sk && getApiKey()) sk.value=getApiKey();
+  const sc=document.getElementById('settingsContext');
+  if(sc) sc.value=getUserContext();
+
+  // Plan areas
+  const pa=document.getElementById('planAreas');
+  AREAS.forEach(a=>{
+    const c=document.createElement('div');
+    c.className='area-chip'+(activeAreas.has(a.id)?' active':'');
+    c.dataset.id=a.id; c.textContent=`${a.emoji} ${a.label}`;
+    c.onclick=()=>{
+      if(activeAreas.has(a.id)){activeAreas.delete(a.id);c.classList.remove('active');}
+      else{activeAreas.add(a.id);c.classList.add('active');}
+      save('alex_active_areas',[...activeAreas]);
+    };
+    pa.appendChild(c);
+  });
+
+  // Habit area select
+  const sel=document.getElementById('newHabitArea');
+  AREAS.forEach(a=>{const o=document.createElement('option');o.value=a.id;o.textContent=`${a.emoji} ${a.label}`;sel.appendChild(o);});
+
+  renderDashboard(); renderHabits();
+}
+
+function getWeekKey(){const n=new Date();return`${n.getFullYear()}-W${getWeekNum(n)}`;}
+function getWeekNum(d){
+  const date=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+  const dn=date.getUTCDay()||7; date.setUTCDate(date.getUTCDate()+4-dn);
+  const ys=new Date(Date.UTC(date.getUTCFullYear(),0,1));
+  return Math.ceil((((date-ys)/86400000)+1)/7);
+}
+
+// ===================== DASHBOARD =====================
+function renderDashboard(){ renderSummary(); renderAreaCards(); }
+
+function renderSummary(){
+  const counts={green:0,yellow:0,red:0,grey:0};
+  AREAS.forEach(a=>{const s=(areaData[a.id]||{}).status||'grey';counts[s]++;});
+  document.getElementById('summaryStrip').innerHTML=[
+    {k:'green',label:'On track'},{k:'yellow',label:'Slipping'},{k:'red',label:'Stalling'},{k:'grey',label:'Paused'}
+  ].map(s=>`<div class="summary-box"><div class="summary-num ${s.k}">${counts[s.k]}</div><div class="summary-lbl">${s.label}</div></div>`).join('');
+}
+
+function renderAreaCards(){
+  const grid=document.getElementById('areaGrid'); grid.innerHTML='';
+  AREAS.forEach((a,idx)=>{
+    const d=areaData[a.id]||{status:'grey',note:'',momentum:20,daysSince:null};
+    const st=d.status||'grey'; const m=d.momentum??20;
+    const card=document.createElement('div');
+    card.className=`area-card status-${st}${selectedArea===a.id?' selected':''}`;
+    card.style.animationDelay=`${idx*0.04}s`;
+    const daysLabel=d.daysSince!=null?`Last touch: ${d.daysSince}d ago`:'No activity logged';
+    card.innerHTML=`
+      ${st==='grey'?'<div class="paused-overlay"></div>':''}
+      <div class="card-top"><span class="card-emoji">${a.emoji}</span><span class="status-dot ${st}"></span></div>
+      <div class="card-name">${a.label}</div>
+      <div class="card-status-label ${st}">${STATUS_META[st].label}</div>
+      <div class="card-bar-wrap"><div class="card-bar ${st}" style="width:${m}%"></div></div>
+      <div class="card-last">${daysLabel}</div>
+      ${d.note?`<div class="card-note">${esc(d.note.length>80?d.note.slice(0,80)+'…':d.note)}</div>`:''}`;
+    card.onclick=()=>openDetail(a.id);
+    grid.appendChild(card);
+  });
+}
+
+function openDetail(areaId){
+  selectedArea=selectedArea===areaId?null:areaId;
+  const panel=document.getElementById('detailPanel');
+  if(!selectedArea){panel.classList.remove('open');renderAreaCards();return;}
+  const a=AREAS.find(x=>x.id===areaId);
+  const d=areaData[areaId]||{status:'grey',note:'',momentum:20,daysSince:null};
+  panel.classList.add('open');
+  panel.innerHTML=`
+    <div class="detail-header">
+      <div class="detail-title">${a.emoji} ${a.label}</div>
+      <button class="detail-close" onclick="selectedArea=null;document.getElementById('detailPanel').classList.remove('open');renderAreaCards()">✕ Close</button>
+    </div>
+    <div class="detail-body">
+      <div>
+        <div class="detail-section-title">Status</div>
+        <select class="status-select" onchange="updateField('${areaId}','status',this.value)">
+          <option value="green"${d.status==='green'?' selected':''}>🟢 On track</option>
+          <option value="yellow"${d.status==='yellow'?' selected':''}>🟡 Slipping</option>
+          <option value="red"${d.status==='red'?' selected':''}>🔴 Stalling</option>
+          <option value="grey"${d.status==='grey'?' selected':''}>⚫ Paused</option>
+        </select>
+        <div style="margin-top:14px">
+          <div class="detail-section-title">Momentum</div>
+          <input type="range" min="0" max="100" value="${d.momentum??20}" style="width:100%;accent-color:var(--accent);margin-bottom:4px" oninput="updateField('${areaId}','momentum',parseInt(this.value));this.nextElementSibling.textContent=this.value+'%'"/>
+          <div style="font-size:10px;color:var(--muted)">${d.momentum??20}%</div>
+        </div>
+        <div style="margin-top:14px">
+          <div class="detail-section-title">Days since last touch</div>
+          <input type="number" class="days-input" value="${d.daysSince??''}" placeholder="e.g. 3" min="0" onchange="updateField('${areaId}','daysSince',parseInt(this.value)||null)"/>
+        </div>
+      </div>
+      <div>
+        <div class="detail-section-title">Situation / next step</div>
+        <textarea class="note-input" placeholder="What's the situation? What's the next action?" onchange="updateField('${areaId}','note',this.value)">${d.note||''}</textarea>
+      </div>
+    </div>`;
+  renderAreaCards();
+  panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function updateField(id,field,val){
+  if(!areaData[id]) areaData[id]={status:'grey',note:'',momentum:20,daysSince:null};
+  areaData[id][field]=val; save('alex_areas',areaData); renderDashboard();
+  if(selectedArea===id) document.getElementById('detailPanel').classList.add('open');
+}
+
+async function runAnalysis(){
+  if(!getApiKey()){alert('Add your API key in Settings first.');return;}
+  const btn=document.getElementById('analyzeBtn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Analyzing...';
+  const snapshot=AREAS.map(a=>{const d=areaData[a.id]||{};return`${a.emoji} ${a.label}: status=${d.status||'grey'}, momentum=${d.momentum??20}%, last_touch=${d.daysSince!=null?d.daysSince+'d ago':'unknown'}, note="${d.note||'none'}"`;}).join('\n');
+  const el=document.getElementById('aiInsights');
+  el.style.display='block';
+  el.innerHTML=`<div class="ai-insights"><div class="ai-insights-title">◉ AI Analysis — ${new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}</div><div class="ai-insights-text"><span class="cursor-blink"></span></div></div>`;
+  let text='';
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':getApiKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,stream:true,messages:[{role:'user',content:`You are a personal clarity engine for: ${getUserContext()}\n\nCurrent area health:\n${snapshot}\n\nWrite a sharp, honest 4-5 line analysis. No bullet points, no headers. Cover:\n1. What's actually at risk right now\n2. One pattern you notice\n3. One specific thing to do today or tomorrow\n\nDirect, no fluff, like a trusted co-founder.`}]})
+    });
+    const reader=res.body.getReader(); const dec=new TextDecoder();
+    while(true){
+      const{done,value}=await reader.read(); if(done) break;
+      for(const line of dec.decode(value).split('\n')){
+        if(line.startsWith('data: ')){try{const p=JSON.parse(line.slice(6));if(p.delta?.text){text+=p.delta.text;el.querySelector('.ai-insights-text').innerHTML=esc(text)+'<span class="cursor-blink"></span>';}}catch{}}
+      }
+    }
+    el.querySelector('.ai-insights-text').innerHTML=esc(text);
+  }catch(e){el.querySelector('.ai-insights-text').textContent='⚠ Error. Check your API key in Settings.';}
+  btn.disabled=false; btn.textContent='◉ AI Analysis';
+}
+
+// ===================== PLAN =====================
+function setMode(el){
+  document.querySelectorAll('[data-mode]').forEach(c=>c.classList.remove('active')); el.classList.add('active'); currentMode=el.dataset.mode;
+  const labels={weekly:'Brain dump — what\'s on your mind, what\'s urgent, how you\'re feeling',focus:'What\'s happening right now? I\'ll give you the ONE thing to do.',review:'How did the week go?'};
+  const btns={weekly:'→ Generate plan',focus:'→ Tell me what to do',review:'→ Review & reflect'};
+  document.getElementById('inputLabel').textContent=labels[currentMode];
+  document.getElementById('runBtn').textContent=btns[currentMode];
+}
+
+function buildPrompt(dump,mode){
+  const areaList=AREAS.filter(a=>activeAreas.has(a.id)).map(a=>`${a.emoji} ${a.label}`).join(', ');
+  const snapshot=AREAS.filter(a=>activeAreas.has(a.id)).map(a=>{const d=areaData[a.id]||{};return`${a.label}: ${d.status||'unknown'} — ${d.note||'no notes'}`;}).join('\n');
+  const ctx=getUserContext();
+  const modes={
+    weekly:`You are a personal clarity engine for: ${ctx}\n\nCurrent area health:\n${snapshot}\n\nGiven the brain dump, produce a WEEKLY PLAN:\n🎯 THIS WEEK'S FOCUS (one sentence)\n📋 BY AREA (max 2-3 specific actions, only active areas)\n🗓️ TIME BLOCKS ([Area] — [hours]h — [day suggestion])\n⚠️ WATCH OUT FOR\n💬 ONE HONEST OBSERVATION\n\nDirect and brief. No fluff.`,
+    focus:`You are a personal clarity engine for: ${ctx}\n\nGive THE ONE THING to do right now.\n⚡ DO THIS FIRST (one action, 2 sentences max)\nWHY (one line)\nAFTER THAT (next 2 in order)\nIGNORE FOR NOW`,
+    review:`You are a personal clarity engine for: ${ctx}\n\nReview the week.\n✅ WINS\n❌ GAPS (and whether they matter)\n📊 AREA HEALTH (🟢/🟡/🔴 per active area)\n🔁 CARRY FORWARD (max 3)\n💡 PATTERN NOTICED`
+  };
+  return`${modes[mode]}\n\nACTIVE AREAS: ${areaList}\n\nBRAIN DUMP:\n${dump}`;
+}
+
+async function runClaude(){
+  if(!getApiKey()){alert('Add your API key in Settings first.');return;}
+  const dump=document.getElementById('dump').value.trim(); if(!dump){alert('Add something first.');return;}
+  const btn=document.getElementById('runBtn'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Thinking...';
+  const out=document.getElementById('planOutput'); const txt=document.getElementById('planText');
+  out.style.display='block'; txt.innerHTML='<span class="cursor-blink"></span>'; lastPlanText=''; let full='';
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':getApiKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,stream:true,messages:[{role:'user',content:buildPrompt(dump,currentMode)}]})
+    });
+    const reader=res.body.getReader(); const dec=new TextDecoder();
+    while(true){
+      const{done,value}=await reader.read(); if(done) break;
+      for(const line of dec.decode(value).split('\n')){if(line.startsWith('data: ')){try{const p=JSON.parse(line.slice(6));if(p.delta?.text){full+=p.delta.text;txt.innerHTML=esc(full)+'<span class="cursor-blink"></span>';}}catch{}}}
+    }
+    txt.innerHTML=esc(full); lastPlanText=full;
+  }catch(e){txt.textContent='⚠ Error. Check your API key in Settings.';}
+  btn.disabled=false; btn.textContent=currentMode==='weekly'?'→ Generate plan':currentMode==='focus'?'→ Tell me what to do':'→ Review & reflect';
+}
+
+function copyPlan(){ navigator.clipboard.writeText(document.getElementById('planText').textContent); }
+
+async function pushToAreas(){
+  if(!lastPlanText||!getApiKey()) return;
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':getApiKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,messages:[{role:'user',content:`From this weekly plan, infer health status for each area. Return ONLY JSON, no markdown. Format: {"areaId":{"status":"green"|"yellow"|"red"|"grey","momentum":0-100}}. Area IDs: ${AREAS.map(a=>a.id).join(', ')}. Plan:\n\n${lastPlanText}`}]})
+    });
+    const data=await res.json();
+    const raw=(data.content[0]?.text||'').replace(/```json|```/g,'').trim();
+    const updates=JSON.parse(raw);
+    Object.entries(updates).forEach(([id,vals])=>{if(areaData[id]) areaData[id]={...areaData[id],...vals};});
+    save('alex_areas',areaData); renderDashboard(); switchTab('dashboard',document.querySelectorAll('.tab')[0]);
+  }catch(e){alert('Could not parse. Update dashboard manually.');}
+}
+
+// ===================== HABITS =====================
+function renderHabits(){
+  const grid=document.getElementById('habitsGrid'); grid.innerHTML='';
+  if(!habits.length){grid.innerHTML='<p style="color:var(--muted);font-size:12px;padding:20px 0">No habits yet. Add one above.</p>';return;}
+  habits.forEach(h=>{
+    const area=AREAS.find(a=>a.id===h.area);
+    const done=(checkState[h.id]||[]).length; const total=h.tasks.length; const pct=total?Math.round(done/total*100):0;
+    const card=document.createElement('div'); card.className='habit-card';
+    const tasksHtml=h.tasks.map((t,i)=>{
+      const checked=(checkState[h.id]||[]).includes(i);
+      return`<div class="habit-task${checked?' done':''}"><input type="checkbox" id="ck-${h.id}-${i}" ${checked?'checked':''} onchange="toggleCheck('${h.id}',${i},this)"/><label for="ck-${h.id}-${i}">${esc(t)}</label></div>`;
+    }).join('');
+    card.innerHTML=`
+      <div class="habit-header">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:18px">${area?area.emoji:'📌'}</span>
+          <span class="habit-name">${esc(h.name)}</span>
+          <span class="habit-freq-tag freq-${h.freq}">${h.freq}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;color:${pct===100?'var(--green)':'var(--muted)'}">${done}/${total}</span>
+          ${h.streak>0?`<span style="font-size:10px;color:var(--yellow)">🔥${h.streak}</span>`:''}
+          <button onclick="deleteHabit('${h.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:2px 6px">✕</button>
+        </div>
+      </div>
+      <div class="habit-body">${tasksHtml}<div class="progress-bar-wrap"><div class="progress-bar" style="width:${pct}%"></div></div></div>`;
+    grid.appendChild(card);
+  });
+}
+
+function toggleCheck(hId,idx,el){
+  if(!checkState[hId]) checkState[hId]=[];
+  if(el.checked){if(!checkState[hId].includes(idx)) checkState[hId].push(idx);}
+  else{checkState[hId]=checkState[hId].filter(i=>i!==idx);}
+  const h=habits.find(x=>x.id===hId);
+  if(h&&checkState[hId].length===h.tasks.length){h.streak=(h.streak||0)+1;save('alex_habits',habits);}
+  save('alex_checks',checkState); renderHabits();
+}
+function toggleAddHabit(){const f=document.getElementById('addHabitBox');f.style.display=f.style.display==='none'?'block':'none';}
+function saveHabit(){
+  const name=document.getElementById('newHabitName').value.trim();
+  const area=document.getElementById('newHabitArea').value;
+  const freq=document.getElementById('newHabitFreq').value;
+  if(!name){alert('Add a name.');return;}
+  habits.push({id:'h'+Date.now(),name,area,freq,tasks:[name],streak:0});
+  save('alex_habits',habits); document.getElementById('newHabitName').value=''; toggleAddHabit(); renderHabits();
+}
+function deleteHabit(id){if(!confirm('Remove?'))return;habits=habits.filter(h=>h.id!==id);save('alex_habits',habits);renderHabits();}
+
+// ===================== UTILS =====================
+function switchTab(name,el){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active'); el.classList.add('active');
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+init();
+</script>
+</body>
+</html>
