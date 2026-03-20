@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Command.Alex</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Unbounded:wght@400;700;900&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -15,22 +16,21 @@ body{background:var(--bg);color:var(--ink);font-family:'DM Mono',monospace;min-h
 body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.07'/%3E%3C/svg%3E");pointer-events:none;z-index:0;}
 .app{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:28px 20px 80px;}
 
-/* HEADER */
 header{display:grid;grid-template-columns:1fr auto;align-items:end;margin-bottom:32px;padding-bottom:18px;border-bottom:2px solid var(--ink);}
 .logo{font-family:'Unbounded',sans-serif;font-weight:900;font-size:20px;letter-spacing:-1px;}
 .logo span{color:var(--accent);}
 .header-sub{font-size:10px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:2px;}
+.sync-status{font-size:10px;color:var(--muted);text-align:right;margin-top:4px;}
+.sync-status.ok{color:var(--green);}.sync-status.err{color:var(--red);}.sync-status.syncing{color:var(--yellow);}
 .week-num{font-family:'Unbounded',sans-serif;font-weight:700;font-size:16px;text-align:right;}
 .week-lbl{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);text-align:right;}
 
-/* TABS */
 .tabs{display:flex;margin-bottom:28px;border-bottom:2px solid var(--ink);}
 .tab{font-family:'DM Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:2px;padding:10px 18px;background:none;border:none;border-bottom:3px solid transparent;color:var(--muted);cursor:pointer;transition:all .15s;margin-bottom:-2px;}
 .tab:hover{color:var(--ink);}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:500;}
 .panel{display:none;}.panel.active{display:block;}
 
-/* SHARED */
 .section-label{font-size:10px;text-transform:uppercase;letter-spacing:3px;color:var(--muted);margin-bottom:10px;}
 .divider{height:1px;background:var(--border);margin:22px 0;}
 .btn{font-family:'DM Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:2px;padding:10px 18px;border:none;cursor:pointer;transition:all .15s;}
@@ -43,6 +43,19 @@ header{display:grid;grid-template-columns:1fr auto;align-items:end;margin-bottom
 @keyframes spin{to{transform:rotate(360deg)}}
 .cursor-blink{display:inline-block;width:7px;height:13px;background:var(--accent);animation:blink .8s step-end infinite;vertical-align:text-bottom;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* SETUP SCREEN */
+.setup-screen{background:var(--ink);color:var(--bg);padding:40px;margin-bottom:24px;border-left:4px solid var(--accent);}
+.setup-screen h2{font-family:'Unbounded',sans-serif;font-size:16px;font-weight:900;margin-bottom:8px;}
+.setup-screen p{font-size:12px;line-height:1.8;color:rgba(255,255,255,.7);margin-bottom:20px;}
+.setup-screen a{color:var(--accent);}
+.setup-field{margin-bottom:14px;}
+.setup-field label{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,.5);display:block;margin-bottom:6px;}
+.setup-field input{font-family:'DM Mono',monospace;font-size:12px;padding:10px 12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);color:var(--bg);outline:none;width:100%;}
+.setup-field input:focus{border-color:var(--accent);}
+.setup-field input::placeholder{color:rgba(255,255,255,.3);}
+.setup-steps{font-size:11px;line-height:2.2;color:rgba(255,255,255,.6);margin-bottom:24px;border-left:2px solid rgba(255,77,0,.4);padding-left:16px;}
+.setup-steps strong{color:var(--bg);}
 
 /* SUMMARY */
 .summary-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:24px;}
@@ -116,15 +129,6 @@ header{display:grid;grid-template-columns:1fr auto;align-items:end;margin-bottom
 .input-box::placeholder{color:var(--muted);font-style:italic;}
 .output-box{background:var(--card);border:1.5px solid var(--border);border-left:4px solid var(--accent);padding:20px;line-height:1.8;font-size:12px;white-space:pre-wrap;margin-top:14px;}
 
-/* API KEY SETUP */
-.setup-banner{background:var(--ink);color:var(--bg);padding:16px 20px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
-.setup-banner p{font-size:11px;line-height:1.6;}
-.setup-banner a{color:var(--accent);}
-.api-key-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;}
-.api-key-input{font-family:'DM Mono',monospace;font-size:12px;padding:8px 12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:var(--bg);outline:none;flex:1;min-width:240px;}
-.api-key-input::placeholder{color:rgba(255,255,255,.4);}
-.api-key-input:focus{border-color:var(--accent);}
-
 /* HABITS */
 .habits-grid{display:grid;gap:10px;}
 .habit-card{background:var(--card);border:1.5px solid var(--border);}
@@ -145,17 +149,30 @@ header{display:grid;grid-template-columns:1fr auto;align-items:end;margin-bottom
 /* SETTINGS */
 .settings-section{background:var(--card);border:1.5px solid var(--border);padding:20px;margin-bottom:16px;}
 .settings-title{font-family:'Unbounded',sans-serif;font-size:11px;font-weight:700;margin-bottom:14px;}
-.settings-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;flex-wrap:wrap;}
-.settings-input{font-family:'DM Mono',monospace;font-size:12px;padding:8px 10px;background:var(--bg);border:1.5px solid var(--border);color:var(--ink);outline:none;flex:1;min-width:200px;}
-.settings-input:focus{border-color:var(--ink);}
 .settings-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;}
+.settings-input{font-family:'DM Mono',monospace;font-size:12px;padding:8px 10px;background:var(--bg);border:1.5px solid var(--border);color:var(--ink);outline:none;width:100%;}
+.settings-input:focus{border-color:var(--ink);}
+.settings-row{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px;}
 .danger-zone{border-color:var(--red);}
 .danger-zone .settings-title{color:var(--red);}
+
+/* AREAS MANAGER */
+.areas-manager{margin-top:16px;}
+.area-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.area-row:last-child{border-bottom:none;}
+.area-row-emoji{font-size:20px;width:30px;text-align:center;}
+.area-row-label{flex:1;font-size:12px;}
+.area-row-id{font-size:10px;color:var(--muted);}
+.new-area-form{display:grid;grid-template-columns:auto 1fr 1fr auto;gap:8px;margin-top:12px;align-items:center;}
+.new-area-form input{font-family:'DM Mono',monospace;font-size:12px;padding:7px 10px;background:var(--bg);border:1.5px solid var(--border);color:var(--ink);outline:none;}
+.new-area-form input:focus{border-color:var(--ink);}
+.new-area-form input::placeholder{color:var(--muted);}
 
 @media(max-width:600px){
   .detail-body{grid-template-columns:1fr;}
   .summary-strip{grid-template-columns:repeat(2,1fr);}
-  .tabs .tab{padding:10px 12px;font-size:10px;letter-spacing:1px;}
+  .tabs .tab{padding:10px 10px;font-size:10px;letter-spacing:1px;}
+  .new-area-form{grid-template-columns:auto 1fr;grid-template-rows:auto auto auto;}
 }
 </style>
 </head>
@@ -169,20 +186,9 @@ header{display:grid;grid-template-columns:1fr auto;align-items:end;margin-bottom
     <div>
       <div class="week-lbl">Current week</div>
       <div class="week-num" id="weekNum">—</div>
+      <div class="sync-status" id="syncStatus">○ not connected</div>
     </div>
   </header>
-
-  <!-- API KEY SETUP BANNER -->
-  <div class="setup-banner" id="setupBanner" style="display:none">
-    <div>
-      <p>To use AI features, add your Anthropic API key. It's stored only in your browser, never sent anywhere else.<br>
-      Get one at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> — free tier works fine for personal use.</p>
-      <div class="api-key-row">
-        <input type="password" class="api-key-input" id="apiKeyInput" placeholder="sk-ant-..." />
-        <button class="btn btn-primary" style="font-size:10px;padding:8px 14px" onclick="saveApiKey()">Save key</button>
-      </div>
-    </div>
-  </div>
 
   <div class="tabs">
     <button class="tab active" onclick="switchTab('dashboard',this)">◉ Dashboard</button>
@@ -193,14 +199,42 @@ header{display:grid;grid-template-columns:1fr auto;align-items:end;margin-bottom
 
   <!-- DASHBOARD -->
   <div class="panel active" id="tab-dashboard">
-    <div class="summary-strip" id="summaryStrip"></div>
-    <div id="aiInsights" style="display:none"></div>
-    <div class="dash-header">
-      <span class="dash-title">Area health — click any card to edit</span>
-      <button class="btn-analyze" id="analyzeBtn" onclick="runAnalysis()">◉ AI Analysis</button>
+    <div id="setupPrompt" style="display:none">
+      <div class="setup-screen">
+        <h2>Welcome. Let's connect your database.</h2>
+        <p>Command.Alex uses Supabase to store your data — so it works on any device, survives browser clears, and is only accessible to you.</p>
+        <div class="setup-steps">
+          <strong>1.</strong> Go to <a href="https://supabase.com" target="_blank">supabase.com</a> → New project (free)<br>
+          <strong>2.</strong> In the SQL editor, run the setup query from the README<br>
+          <strong>3.</strong> Go to Project Settings → API → copy URL and anon key<br>
+          <strong>4.</strong> Paste them below
+        </div>
+        <div class="setup-field">
+          <label>Supabase Project URL</label>
+          <input type="text" id="setupUrl" placeholder="https://xxxxxxxxxxxx.supabase.co" />
+        </div>
+        <div class="setup-field">
+          <label>Supabase Anon Key</label>
+          <input type="password" id="setupKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." />
+        </div>
+        <div class="setup-field">
+          <label>Anthropic API Key</label>
+          <input type="password" id="setupAnthropicKey" placeholder="sk-ant-..." />
+        </div>
+        <button class="btn btn-primary" style="margin-top:8px" onclick="saveSetup()">Connect & continue →</button>
+      </div>
     </div>
-    <div class="area-grid" id="areaGrid"></div>
-    <div class="detail-panel" id="detailPanel"></div>
+
+    <div id="dashboardContent" style="display:none">
+      <div class="summary-strip" id="summaryStrip"></div>
+      <div id="aiInsights" style="display:none"></div>
+      <div class="dash-header">
+        <span class="dash-title">Area health — click any card to edit</span>
+        <button class="btn-analyze" id="analyzeBtn" onclick="runAnalysis()">◉ AI Analysis</button>
+      </div>
+      <div class="area-grid" id="areaGrid"></div>
+      <div class="detail-panel" id="detailPanel"></div>
+    </div>
   </div>
 
   <!-- PLAN -->
@@ -256,55 +290,75 @@ header{display:grid;grid-template-columns:1fr auto;align-items:end;margin-bottom
   <!-- SETTINGS -->
   <div class="panel" id="tab-settings">
     <div class="settings-section">
-      <div class="settings-title">Anthropic API Key</div>
-      <div class="settings-label">Stored locally in your browser only</div>
+      <div class="settings-title">Supabase Connection</div>
+      <div class="settings-label" style="margin-bottom:6px">Project URL</div>
       <div class="settings-row">
-        <input type="password" class="settings-input" id="settingsApiKey" placeholder="sk-ant-..." />
-        <button class="btn btn-primary" style="font-size:10px;padding:9px 14px" onclick="saveApiKey()">Save</button>
+        <input type="text" class="settings-input" id="settingsUrl" placeholder="https://xxxxxxxxxxxx.supabase.co"/>
       </div>
-      <p style="font-size:10px;color:var(--muted);margin-top:8px">Get a key at <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent)">console.anthropic.com</a>. The free tier covers personal use easily.</p>
+      <div class="settings-label" style="margin-bottom:6px">Anon Key</div>
+      <div class="settings-row">
+        <input type="password" class="settings-input" id="settingsKey" placeholder="eyJ..."/>
+      </div>
+      <button class="btn btn-primary" style="font-size:10px;padding:9px 14px;margin-top:4px" onclick="saveSupabaseSettings()">Save & reconnect</button>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">Anthropic API Key</div>
+      <div class="settings-label" style="margin-bottom:6px">Stored in your browser only</div>
+      <div class="settings-row">
+        <input type="password" class="settings-input" id="settingsAnthropicKey" placeholder="sk-ant-..."/>
+        <button class="btn btn-primary" style="font-size:10px;padding:9px 14px" onclick="saveAnthropicKey()">Save</button>
+      </div>
+      <p style="font-size:10px;color:var(--muted);margin-top:8px">Get a key at <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent)">console.anthropic.com</a></p>
     </div>
 
     <div class="settings-section">
       <div class="settings-title">Your context</div>
-      <div class="settings-label" style="margin-bottom:6px">Who you are (used in every AI prompt)</div>
-      <textarea class="settings-input" id="settingsContext" style="min-height:100px;resize:vertical;line-height:1.6" placeholder="e.g. CEO of MarsBased, co-host of Foc a Terra podcast, guitarist in RES!..."></textarea>
+      <div class="settings-label" style="margin-bottom:6px">Used in every AI prompt</div>
+      <textarea class="settings-input" id="settingsContext" style="min-height:90px;resize:vertical;line-height:1.6" placeholder="Who you are, how you work..."></textarea>
       <button class="btn btn-ghost" style="font-size:10px;padding:8px 14px;margin-top:8px" onclick="saveContext()">Save context</button>
     </div>
 
+    <div class="settings-section">
+      <div class="settings-title">Manage areas</div>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:14px">Add or remove life areas. Removing an area keeps its data in the database — it just won't show on the dashboard.</p>
+      <div class="areas-manager" id="areasManager"></div>
+      <div class="new-area-form" id="newAreaForm">
+        <input type="text" id="newAreaEmoji" placeholder="🌱" maxlength="2" style="width:50px;text-align:center"/>
+        <input type="text" id="newAreaLabel" placeholder="Area name"/>
+        <input type="text" id="newAreaId" placeholder="area-id (no spaces)"/>
+        <button class="btn btn-primary" style="font-size:10px;padding:8px 14px" onclick="addArea()">Add</button>
+      </div>
+    </div>
+
     <div class="settings-section danger-zone">
-      <div class="settings-title">Reset data</div>
-      <p style="font-size:11px;color:var(--muted);margin-bottom:12px">Clear all dashboard state, habits, and check history. Cannot be undone.</p>
-      <button class="btn btn-ghost" style="font-size:10px;color:var(--red);border-color:var(--red)" onclick="resetAll()">Reset everything</button>
+      <div class="settings-title">Danger zone</div>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:12px">Reset all dashboard data. Your Supabase connection and API keys are kept.</p>
+      <button class="btn btn-ghost" style="font-size:10px;color:var(--red);border-color:var(--red)" onclick="resetData()">Reset all data</button>
     </div>
   </div>
 </div>
 
 <script>
 // ===================== CONFIG =====================
-const AREAS = [
+const DEFAULT_AREAS = [
   { id:'marsbased', label:'MarsBased', emoji:'🚀' },
   { id:'focaterra', label:'Foc a Terra', emoji:'🎙️' },
   { id:'band', label:'RES!', emoji:'🎸' },
   { id:'microplastics', label:'Microplastics', emoji:'🌊' },
   { id:'awesomehome', label:'Awesome Home', emoji:'🏠' },
-  { id:'sideprojects', label:'Side projects', emoji:'⚡' },
   { id:'finances', label:'Finances', emoji:'💶' },
-  { id:'gaming', label:'Gaming', emoji:'🎮' },
-  { id:'community', label:'Community', emoji:'🌍' },
-  { id:'personal', label:'Personal', emoji:'🧠' },
+  { id:'investments', label:'Investments', emoji:'📈' },
+  { id:'learning', label:'Learning', emoji:'📚' },
 ];
-
-const STATUS_META = {
-  green:{ label:'On track' }, yellow:{ label:'Slipping' },
-  red:{ label:'Stalling' }, grey:{ label:'Paused' },
-};
 
 const DEFAULT_HABITS = [
   { id:'h1', name:'MarsBased weekly review', area:'marsbased', freq:'weekly', tasks:['Check pipeline / CRM','Review team blockers','Next week priorities'], streak:0 },
   { id:'h2', name:'Foc a Terra — post-production', area:'focaterra', freq:'weekly', tasks:['Post episode clip to Instagram','Schedule social post','Reply to comments'], streak:0 },
   { id:'h3', name:'RES! practice', area:'band', freq:'weekly', tasks:['Rehearsal or home session'], streak:0 },
-  { id:'h4', name:'Finances check', area:'finances', freq:'monthly', tasks:['Update balances','Check investments','Review credits/loans'], streak:0 },
+  { id:'h4', name:'Finances check', area:'finances', freq:'monthly', tasks:['Update balances','Check credits/loans'], streak:0 },
+  { id:'h5', name:'Investments review', area:'investments', freq:'monthly', tasks:['Check portfolio updates','Follow up on any rounds','Log new opportunities'], streak:0 },
+  { id:'h6', name:'Learning block', area:'learning', freq:'weekly', tasks:['Thu 17:00 slot — read, course, or video'], streak:0 },
 ];
 
 const SEEDED_AREA_DATA = {
@@ -313,92 +367,197 @@ const SEEDED_AREA_DATA = {
   band: { status:'yellow', momentum:45, daysSince:1, note:'Rehearsal next week. Identity question unresolved — old vs new name/brand.' },
   microplastics: { status:'grey', momentum:30, daysSince:null, note:'' },
   awesomehome: { status:'grey', momentum:20, daysSince:null, note:'' },
-  sideprojects: { status:'grey', momentum:20, daysSince:null, note:'' },
   finances: { status:'grey', momentum:20, daysSince:null, note:'' },
-  gaming: { status:'grey', momentum:50, daysSince:null, note:'' },
-  community: { status:'grey', momentum:10, daysSince:null, note:'' },
-  personal: { status:'grey', momentum:40, daysSince:null, note:'' },
+  investments: { status:'grey', momentum:30, daysSince:null, note:'30+ angel investments across 5 countries.' },
+  learning: { status:'grey', momentum:20, daysSince:null, note:'' },
 };
 
 const DEFAULT_CONTEXT = `CEO of MarsBased (Barcelona tech consultancy). Co-hosts Foc a Terra (Catalan podcast, weekly). Guitarist/singer in RES! (punk band). Multiple side projects (microplastics.cat, awesome home, etc). Angel investor with 30+ investments. Works 32h/week on MarsBased, one day/week free for other areas.`;
 
+const STATUS_META = { green:{label:'On track'}, yellow:{label:'Slipping'}, red:{label:'Stalling'}, grey:{label:'Paused'} };
+
 // ===================== STATE =====================
-let areaData = load('alex_areas') || JSON.parse(JSON.stringify(SEEDED_AREA_DATA));
-let habits = load('alex_habits') || JSON.parse(JSON.stringify(DEFAULT_HABITS));
-let checkState = loadChecks();
-let activeAreas = new Set(load('alex_active_areas') || ['marsbased','focaterra','band']);
+let sb = null; // supabase client
+let areas = [];
+let areaData = {};
+let habits = [];
+let checkState = {};
+let activeAreas = new Set();
 let currentMode = 'weekly';
 let selectedArea = null;
 let lastPlanText = '';
+let saveTimer = null;
 
-function load(key){ try{ const s=localStorage.getItem(key); return s?JSON.parse(s):null; }catch{return null;} }
-function save(key,val){ try{ localStorage.setItem(key,JSON.stringify(val)); }catch{} }
-function loadChecks(){
+// localStorage helpers (credentials only — never data)
+const lsGet = k => { try{ return localStorage.getItem(k); }catch{ return null; } };
+const lsSet = (k,v) => { try{ localStorage.setItem(k,v); }catch{} };
+
+function getAnthropicKey(){ return lsGet('cmd_anthropic_key')||''; }
+
+// ===================== SUPABASE =====================
+async function initSupabase(){
+  const url = lsGet('cmd_sb_url');
+  const key = lsGet('cmd_sb_key');
+  if(!url||!key){ showSetup(); return false; }
   try{
-    const d=load('alex_checks')||{};
-    const wk=getWeekKey(); if(d._wk!==wk) return{_wk:wk}; return d;
-  }catch{return{_wk:getWeekKey()};}
+    sb = supabase.createClient(url, key);
+    setSyncStatus('syncing','↺ connecting...');
+    // Test connection
+    const { error } = await sb.from('user_data').select('key').limit(1);
+    if(error) throw error;
+    setSyncStatus('ok','● connected');
+    return true;
+  }catch(e){
+    setSyncStatus('err','✕ connection failed');
+    showSetup(); return false;
+  }
 }
-function getApiKey(){ return localStorage.getItem('alex_api_key')||''; }
-function saveApiKey(){
-  const k=(document.getElementById('apiKeyInput')||document.getElementById('settingsApiKey')).value.trim();
-  if(!k){alert('Paste your API key first.');return;}
-  localStorage.setItem('alex_api_key',k);
-  document.getElementById('setupBanner').style.display='none';
-  if(document.getElementById('settingsApiKey')) document.getElementById('settingsApiKey').value=k;
+
+function showSetup(){
+  document.getElementById('setupPrompt').style.display='block';
+  document.getElementById('dashboardContent').style.display='none';
+}
+
+async function saveSetup(){
+  const url = document.getElementById('setupUrl').value.trim();
+  const key = document.getElementById('setupKey').value.trim();
+  const ak = document.getElementById('setupAnthropicKey').value.trim();
+  if(!url||!key){ alert('Paste both Supabase URL and anon key.'); return; }
+  lsSet('cmd_sb_url', url);
+  lsSet('cmd_sb_key', key);
+  if(ak) lsSet('cmd_anthropic_key', ak);
+  const ok = await initSupabase();
+  if(ok){ document.getElementById('setupPrompt').style.display='none'; document.getElementById('dashboardContent').style.display='block'; await loadAllData(); }
+}
+
+async function saveSupabaseSettings(){
+  const url = document.getElementById('settingsUrl').value.trim();
+  const key = document.getElementById('settingsKey').value.trim();
+  if(!url||!key){ alert('Both fields required.'); return; }
+  lsSet('cmd_sb_url', url);
+  lsSet('cmd_sb_key', key);
+  const ok = await initSupabase();
+  if(ok) alert('Connected successfully.');
+}
+
+function saveAnthropicKey(){
+  const k = document.getElementById('settingsAnthropicKey').value.trim();
+  if(!k){ alert('Paste your key first.'); return; }
+  lsSet('cmd_anthropic_key', k);
   alert('API key saved.');
 }
+
 function saveContext(){
-  const v=document.getElementById('settingsContext').value.trim();
-  localStorage.setItem('alex_context',v); alert('Context saved.');
+  const v = document.getElementById('settingsContext').value.trim();
+  lsSet('cmd_context', v);
+  alert('Context saved.');
 }
-function getUserContext(){ return localStorage.getItem('alex_context')||DEFAULT_CONTEXT; }
-function resetAll(){
-  if(!confirm('Reset ALL data? This cannot be undone.')) return;
-  ['alex_areas','alex_habits','alex_checks','alex_active_areas'].forEach(k=>localStorage.removeItem(k));
-  location.reload();
+
+function getUserContext(){ return lsGet('cmd_context') || DEFAULT_CONTEXT; }
+
+// ===================== DATA LAYER =====================
+async function dbGet(key){
+  if(!sb) return null;
+  try{
+    const { data, error } = await sb.from('user_data').select('value').eq('key', key).single();
+    if(error || !data) return null;
+    return data.value;
+  }catch{ return null; }
 }
+
+async function dbSet(key, value){
+  if(!sb) return;
+  setSyncStatus('syncing','↺ saving...');
+  try{
+    const { error } = await sb.from('user_data').upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+    if(error) throw error;
+    setSyncStatus('ok','● saved ' + new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}));
+  }catch(e){
+    setSyncStatus('err','✕ save failed');
+    console.error('dbSet error:', e);
+  }
+}
+
+// Debounced save — batches rapid changes
+function scheduleSave(key, value){
+  if(saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => dbSet(key, value), 800);
+}
+
+async function loadAllData(){
+  setSyncStatus('syncing','↺ loading...');
+  try{
+    const [areasRes, areaDataRes, habitsRes, checksRes, activeRes] = await Promise.all([
+      dbGet('areas'), dbGet('area_data'), dbGet('habits'), dbGet('check_state'), dbGet('active_areas')
+    ]);
+
+    areas = areasRes || DEFAULT_AREAS;
+
+    // Merge seeded data with stored — stored wins
+    const defaultAreaData = {};
+    areas.forEach(a => { defaultAreaData[a.id] = { status:'grey', momentum:20, daysSince:null, note:'' }; });
+    Object.assign(defaultAreaData, SEEDED_AREA_DATA);
+    areaData = areaDataRes ? { ...defaultAreaData, ...areaDataRes } : defaultAreaData;
+
+    habits = habitsRes || JSON.parse(JSON.stringify(DEFAULT_HABITS));
+    activeAreas = new Set(activeRes || ['marsbased','focaterra','band','microplastics','awesomehome','finances','investments','learning']);
+
+    // Check state: reset if new week
+    const stored = checksRes || {};
+    const wk = getWeekKey();
+    checkState = stored._wk === wk ? stored : { _wk: wk };
+
+    setSyncStatus('ok','● loaded');
+    renderAll();
+  }catch(e){
+    setSyncStatus('err','✕ load failed');
+    console.error('loadAllData error:', e);
+  }
+}
+
+async function saveAreas(){ await dbSet('areas', areas); }
+async function saveAreaData(){ scheduleSave('area_data', areaData); }
+async function saveHabits(){ await dbSet('habits', habits); }
+async function saveChecks(){ scheduleSave('check_state', checkState); }
+async function saveActiveAreas(){ scheduleSave('active_areas', [...activeAreas]); }
 
 // ===================== INIT =====================
-function init(){
-  const n=new Date();
-  document.getElementById('weekNum').textContent=`W${getWeekNum(n)} · ${n.getFullYear()}`;
-
-  if(!getApiKey()) document.getElementById('setupBanner').style.display='flex';
-
-  // Settings tab
-  const sk=document.getElementById('settingsApiKey');
-  if(sk && getApiKey()) sk.value=getApiKey();
-  const sc=document.getElementById('settingsContext');
-  if(sc) sc.value=getUserContext();
-
-  // Plan areas
-  const pa=document.getElementById('planAreas');
-  AREAS.forEach(a=>{
-    const c=document.createElement('div');
-    c.className='area-chip'+(activeAreas.has(a.id)?' active':'');
-    c.dataset.id=a.id; c.textContent=`${a.emoji} ${a.label}`;
-    c.onclick=()=>{
-      if(activeAreas.has(a.id)){activeAreas.delete(a.id);c.classList.remove('active');}
-      else{activeAreas.add(a.id);c.classList.add('active');}
-      save('alex_active_areas',[...activeAreas]);
-    };
-    pa.appendChild(c);
-  });
-
-  // Habit area select
-  const sel=document.getElementById('newHabitArea');
-  AREAS.forEach(a=>{const o=document.createElement('option');o.value=a.id;o.textContent=`${a.emoji} ${a.label}`;sel.appendChild(o);});
-
-  renderDashboard(); renderHabits();
-}
-
-function getWeekKey(){const n=new Date();return`${n.getFullYear()}-W${getWeekNum(n)}`;}
+function getWeekKey(){ const n=new Date(); return`${n.getFullYear()}-W${getWeekNum(n)}`; }
 function getWeekNum(d){
   const date=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
   const dn=date.getUTCDay()||7; date.setUTCDate(date.getUTCDate()+4-dn);
   const ys=new Date(Date.UTC(date.getUTCFullYear(),0,1));
   return Math.ceil((((date-ys)/86400000)+1)/7);
+}
+function setSyncStatus(type, msg){
+  const el=document.getElementById('syncStatus');
+  el.textContent=msg; el.className='sync-status '+type;
+}
+
+async function init(){
+  const n=new Date();
+  document.getElementById('weekNum').textContent=`W${getWeekNum(n)} · ${n.getFullYear()}`;
+
+  // Prefill settings
+  if(lsGet('cmd_sb_url')) document.getElementById('settingsUrl').value=lsGet('cmd_sb_url');
+  if(lsGet('cmd_sb_key')) document.getElementById('settingsKey').value=lsGet('cmd_sb_key');
+  if(getAnthropicKey()) document.getElementById('settingsAnthropicKey').value=getAnthropicKey();
+  if(lsGet('cmd_context')) document.getElementById('settingsContext').value=lsGet('cmd_context');
+
+  const ok = await initSupabase();
+  if(ok){
+    document.getElementById('setupPrompt').style.display='none';
+    document.getElementById('dashboardContent').style.display='block';
+    await loadAllData();
+  }
+}
+
+function renderAll(){
+  renderPlanAreas();
+  renderAreasManager();
+  renderHabitAreaSelect();
+  renderDashboard();
+  renderHabits();
 }
 
 // ===================== DASHBOARD =====================
@@ -406,7 +565,7 @@ function renderDashboard(){ renderSummary(); renderAreaCards(); }
 
 function renderSummary(){
   const counts={green:0,yellow:0,red:0,grey:0};
-  AREAS.forEach(a=>{const s=(areaData[a.id]||{}).status||'grey';counts[s]++;});
+  areas.forEach(a=>{ const s=(areaData[a.id]||{}).status||'grey'; counts[s]++; });
   document.getElementById('summaryStrip').innerHTML=[
     {k:'green',label:'On track'},{k:'yellow',label:'Slipping'},{k:'red',label:'Stalling'},{k:'grey',label:'Paused'}
   ].map(s=>`<div class="summary-box"><div class="summary-num ${s.k}">${counts[s.k]}</div><div class="summary-lbl">${s.label}</div></div>`).join('');
@@ -414,7 +573,7 @@ function renderSummary(){
 
 function renderAreaCards(){
   const grid=document.getElementById('areaGrid'); grid.innerHTML='';
-  AREAS.forEach((a,idx)=>{
+  areas.forEach((a,idx)=>{
     const d=areaData[a.id]||{status:'grey',note:'',momentum:20,daysSince:null};
     const st=d.status||'grey'; const m=d.momentum??20;
     const card=document.createElement('div');
@@ -437,8 +596,8 @@ function renderAreaCards(){
 function openDetail(areaId){
   selectedArea=selectedArea===areaId?null:areaId;
   const panel=document.getElementById('detailPanel');
-  if(!selectedArea){panel.classList.remove('open');renderAreaCards();return;}
-  const a=AREAS.find(x=>x.id===areaId);
+  if(!selectedArea){ panel.classList.remove('open'); renderAreaCards(); return; }
+  const a=areas.find(x=>x.id===areaId);
   const d=areaData[areaId]||{status:'grey',note:'',momentum:20,daysSince:null};
   panel.classList.add('open');
   panel.innerHTML=`
@@ -457,17 +616,20 @@ function openDetail(areaId){
         </select>
         <div style="margin-top:14px">
           <div class="detail-section-title">Momentum</div>
-          <input type="range" min="0" max="100" value="${d.momentum??20}" style="width:100%;accent-color:var(--accent);margin-bottom:4px" oninput="updateField('${areaId}','momentum',parseInt(this.value));this.nextElementSibling.textContent=this.value+'%'"/>
+          <input type="range" min="0" max="100" value="${d.momentum??20}" style="width:100%;accent-color:var(--accent);margin-bottom:4px"
+            oninput="updateField('${areaId}','momentum',parseInt(this.value));this.nextElementSibling.textContent=this.value+'%'"/>
           <div style="font-size:10px;color:var(--muted)">${d.momentum??20}%</div>
         </div>
         <div style="margin-top:14px">
           <div class="detail-section-title">Days since last touch</div>
-          <input type="number" class="days-input" value="${d.daysSince??''}" placeholder="e.g. 3" min="0" onchange="updateField('${areaId}','daysSince',parseInt(this.value)||null)"/>
+          <input type="number" class="days-input" value="${d.daysSince??''}" placeholder="e.g. 3" min="0"
+            onchange="updateField('${areaId}','daysSince',parseInt(this.value)||null)"/>
         </div>
       </div>
       <div>
         <div class="detail-section-title">Situation / next step</div>
-        <textarea class="note-input" placeholder="What's the situation? What's the next action?" onchange="updateField('${areaId}','note',this.value)">${d.note||''}</textarea>
+        <textarea class="note-input" placeholder="What's the situation? What's the next action?"
+          onchange="updateField('${areaId}','note',this.value)">${d.note||''}</textarea>
       </div>
     </div>`;
   renderAreaCards();
@@ -476,15 +638,17 @@ function openDetail(areaId){
 
 function updateField(id,field,val){
   if(!areaData[id]) areaData[id]={status:'grey',note:'',momentum:20,daysSince:null};
-  areaData[id][field]=val; save('alex_areas',areaData); renderDashboard();
+  areaData[id][field]=val;
+  renderDashboard();
   if(selectedArea===id) document.getElementById('detailPanel').classList.add('open');
+  saveAreaData();
 }
 
 async function runAnalysis(){
-  if(!getApiKey()){alert('Add your API key in Settings first.');return;}
+  if(!getAnthropicKey()){ alert('Add your Anthropic API key in Settings first.'); return; }
   const btn=document.getElementById('analyzeBtn');
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Analyzing...';
-  const snapshot=AREAS.map(a=>{const d=areaData[a.id]||{};return`${a.emoji} ${a.label}: status=${d.status||'grey'}, momentum=${d.momentum??20}%, last_touch=${d.daysSince!=null?d.daysSince+'d ago':'unknown'}, note="${d.note||'none'}"`;}).join('\n');
+  const snapshot=areas.map(a=>{ const d=areaData[a.id]||{}; return`${a.emoji} ${a.label}: status=${d.status||'grey'}, momentum=${d.momentum??20}%, last_touch=${d.daysSince!=null?d.daysSince+'d ago':'unknown'}, note="${d.note||'none'}"`;}).join('\n');
   const el=document.getElementById('aiInsights');
   el.style.display='block';
   el.innerHTML=`<div class="ai-insights"><div class="ai-insights-title">◉ AI Analysis — ${new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}</div><div class="ai-insights-text"><span class="cursor-blink"></span></div></div>`;
@@ -492,19 +656,74 @@ async function runAnalysis(){
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':getApiKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,stream:true,messages:[{role:'user',content:`You are a personal clarity engine for: ${getUserContext()}\n\nCurrent area health:\n${snapshot}\n\nWrite a sharp, honest 4-5 line analysis. No bullet points, no headers. Cover:\n1. What's actually at risk right now\n2. One pattern you notice\n3. One specific thing to do today or tomorrow\n\nDirect, no fluff, like a trusted co-founder.`}]})
+      headers:{'Content-Type':'application/json','x-api-key':getAnthropicKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,stream:true,
+        messages:[{role:'user',content:`You are a personal clarity engine for: ${getUserContext()}\n\nCurrent area health:\n${snapshot}\n\nWrite a sharp, honest 4-5 line analysis. No bullet points, no headers. Cover:\n1. What's actually at risk right now\n2. One pattern you notice\n3. One specific thing to do today or tomorrow\n\nDirect, no fluff, like a trusted co-founder.`}]})
     });
     const reader=res.body.getReader(); const dec=new TextDecoder();
     while(true){
       const{done,value}=await reader.read(); if(done) break;
-      for(const line of dec.decode(value).split('\n')){
-        if(line.startsWith('data: ')){try{const p=JSON.parse(line.slice(6));if(p.delta?.text){text+=p.delta.text;el.querySelector('.ai-insights-text').innerHTML=esc(text)+'<span class="cursor-blink"></span>';}}catch{}}
-      }
+      for(const line of dec.decode(value).split('\n')){ if(line.startsWith('data: ')){try{const p=JSON.parse(line.slice(6));if(p.delta?.text){text+=p.delta.text;el.querySelector('.ai-insights-text').innerHTML=esc(text)+'<span class="cursor-blink"></span>';}}catch{}} }
     }
     el.querySelector('.ai-insights-text').innerHTML=esc(text);
-  }catch(e){el.querySelector('.ai-insights-text').textContent='⚠ Error. Check your API key in Settings.';}
+  }catch(e){ el.querySelector('.ai-insights-text').textContent='⚠ Error. Check your API key in Settings.'; }
   btn.disabled=false; btn.textContent='◉ AI Analysis';
+}
+
+// ===================== AREAS MANAGER =====================
+function renderPlanAreas(){
+  const pa=document.getElementById('planAreas'); pa.innerHTML='';
+  areas.forEach(a=>{
+    const c=document.createElement('div');
+    c.className='area-chip'+(activeAreas.has(a.id)?' active':'');
+    c.dataset.id=a.id; c.textContent=`${a.emoji} ${a.label}`;
+    c.onclick=()=>{
+      if(activeAreas.has(a.id)){activeAreas.delete(a.id);c.classList.remove('active');}
+      else{activeAreas.add(a.id);c.classList.add('active');}
+      saveActiveAreas();
+    };
+    pa.appendChild(c);
+  });
+}
+
+function renderHabitAreaSelect(){
+  const sel=document.getElementById('newHabitArea'); sel.innerHTML='<option value="">— Area —</option>';
+  areas.forEach(a=>{ const o=document.createElement('option'); o.value=a.id; o.textContent=`${a.emoji} ${a.label}`; sel.appendChild(o); });
+}
+
+function renderAreasManager(){
+  const mgr=document.getElementById('areasManager'); mgr.innerHTML='';
+  areas.forEach(a=>{
+    const row=document.createElement('div'); row.className='area-row';
+    row.innerHTML=`
+      <span class="area-row-emoji">${a.emoji}</span>
+      <span class="area-row-label">${a.label} <span class="area-row-id">(${a.id})</span></span>
+      <button onclick="removeArea('${a.id}')" style="background:none;border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:10px;padding:3px 8px;cursor:pointer">Remove</button>`;
+    mgr.appendChild(row);
+  });
+}
+
+async function addArea(){
+  const emoji=document.getElementById('newAreaEmoji').value.trim()||'📌';
+  const label=document.getElementById('newAreaLabel').value.trim();
+  const id=document.getElementById('newAreaId').value.trim().toLowerCase().replace(/\s+/g,'-');
+  if(!label||!id){ alert('Label and ID required.'); return; }
+  if(areas.find(a=>a.id===id)){ alert('ID already exists.'); return; }
+  areas.push({id,label,emoji});
+  areaData[id]={status:'grey',momentum:20,daysSince:null,note:''};
+  await Promise.all([saveAreas(), saveAreaData()]);
+  document.getElementById('newAreaEmoji').value='';
+  document.getElementById('newAreaLabel').value='';
+  document.getElementById('newAreaId').value='';
+  renderAll();
+}
+
+async function removeArea(id){
+  if(!confirm(`Remove "${id}" from the dashboard? Its data stays in the database.`)) return;
+  areas=areas.filter(a=>a.id!==id);
+  activeAreas.delete(id);
+  await Promise.all([saveAreas(), saveActiveAreas()]);
+  renderAll();
 }
 
 // ===================== PLAN =====================
@@ -517,63 +736,150 @@ function setMode(el){
 }
 
 function buildPrompt(dump,mode){
-  const areaList=AREAS.filter(a=>activeAreas.has(a.id)).map(a=>`${a.emoji} ${a.label}`).join(', ');
-  const snapshot=AREAS.filter(a=>activeAreas.has(a.id)).map(a=>{const d=areaData[a.id]||{};return`${a.label}: ${d.status||'unknown'} — ${d.note||'no notes'}`;}).join('\n');
+  const areaList=areas.filter(a=>activeAreas.has(a.id)).map(a=>`${a.emoji} ${a.label}`).join(', ');
+  const snapshot=areas.filter(a=>activeAreas.has(a.id)).map(a=>{ const d=areaData[a.id]||{}; return`${a.label}: ${d.status||'unknown'} — ${d.note||'no notes'}`; }).join('\n');
   const ctx=getUserContext();
+  const weekTemplate = `
+FIXED WEEKLY SCHEDULE (non-negotiable blocks — work around these, not against them):
+
+Every day:
+- 09:00–09:30 Social media + Linear (daily ritual, always first)
+- 12:30–14:00 Gym (protected, daily)
+- 18:30–19:00+ Family (hard stop)
+
+Monday (MarsBased):
+- 09:30–12:00 Sales calls / outreach
+- 10:30–12:00 Podcast (Life on Mars recording slot)
+- 12:00 Citadel / Moody's (investor calls if needed)
+- 14:30 Sales continues
+- 15:00–16:00 Podcast
+- 16:00–18:00 Sales
+- 18:00 Email
+
+Tuesday (MarsBased):
+- 09:30–11:00 Blog
+- 11:00–12:30 Marketing
+- 14:00–16:00 Sales
+- 16:00–19:00 Operations + Backlog
+
+Wednesday (MarsBased):
+- 09:30–11:00 Marketing
+- 11:00–12:30 Admin + Sales
+- 14:00–15:00 Website
+- 15:00–17:00 Sales
+- 16:30–18:30 Family overlap starts
+
+Thursday (FREE DAY — non-MarsBased):
+- 09:30–11:30 Founder to Founder calls / community / angel investing
+- 14:00–16:00 Foc a Terra (recording, prep, post-production)
+- 16:00 Investments
+- 17:00–18:00 Learning
+- Available slots for: RES!, side projects, personal errands, Investments review, Learning
+
+Friday (MarsBased):
+- 09:30–11:00 Admin
+- 11:00–12:30 Strategy
+- 12:30–15:00 Sales
+- 15:00–16:30 Gym + Marketing
+- 16:30 Finance
+- 17:00–18:30 Side projects
+
+Key constraint: Thursday is the ONLY day for non-MarsBased work. Everything outside MarsBased (RES!, Foc a Terra, Microplastics, Awesome Home, Finances, Investments, Learning) must fit into Thursday or evenings. This is a real bottleneck — flag it when relevant.`;
+
   const modes={
-    weekly:`You are a personal clarity engine for: ${ctx}\n\nCurrent area health:\n${snapshot}\n\nGiven the brain dump, produce a WEEKLY PLAN:\n🎯 THIS WEEK'S FOCUS (one sentence)\n📋 BY AREA (max 2-3 specific actions, only active areas)\n🗓️ TIME BLOCKS ([Area] — [hours]h — [day suggestion])\n⚠️ WATCH OUT FOR\n💬 ONE HONEST OBSERVATION\n\nDirect and brief. No fluff.`,
-    focus:`You are a personal clarity engine for: ${ctx}\n\nGive THE ONE THING to do right now.\n⚡ DO THIS FIRST (one action, 2 sentences max)\nWHY (one line)\nAFTER THAT (next 2 in order)\nIGNORE FOR NOW`,
-    review:`You are a personal clarity engine for: ${ctx}\n\nReview the week.\n✅ WINS\n❌ GAPS (and whether they matter)\n📊 AREA HEALTH (🟢/🟡/🔴 per active area)\n🔁 CARRY FORWARD (max 3)\n💡 PATTERN NOTICED`
+    weekly:`You are a personal clarity engine for: ${ctx}
+
+${weekTemplate}
+
+Current area health:
+${snapshot}
+
+Given the brain dump, produce a WEEKLY PLAN that fits INTO the existing schedule above — don't suggest generic time blocks, assign tasks to specific existing slots:
+
+🎯 THIS WEEK'S FOCUS (one sentence)
+
+📋 BY AREA — SPECIFIC SLOT ASSIGNMENTS (only active areas, max 2-3 actions each, name the day and slot)
+e.g. "MarsBased / Sales — use Mon 09:30 block for X, Wed 15:00 block for Y"
+
+⚠️ WATCH OUT FOR (scheduling conflicts or things that won't fit)
+
+💬 ONE HONEST OBSERVATION
+
+Direct and brief. If something can't fit in the schedule, say so.`,
+    focus:`You are a personal clarity engine for: ${ctx}
+
+${weekTemplate}
+
+Give THE ONE THING to do right now, and which slot today it fits into.
+⚡ DO THIS FIRST (one action, which time slot today)
+WHY (one line)
+AFTER THAT (next 2 in order, with slots)
+IGNORE FOR NOW`,
+    review:`You are a personal clarity engine for: ${ctx}
+
+${weekTemplate}
+
+Review the week.
+✅ WINS
+❌ GAPS (and whether they matter)
+📊 AREA HEALTH (🟢/🟡/🔴 per active area)
+🔁 CARRY FORWARD (max 3, with which slot next week)
+💡 PATTERN NOTICED (especially around Thursday bottleneck)`
   };
-  return`${modes[mode]}\n\nACTIVE AREAS: ${areaList}\n\nBRAIN DUMP:\n${dump}`;
+  return`${modes[mode]}
+
+ACTIVE AREAS: ${areaList}
+
+BRAIN DUMP:
+${dump}`;
 }
 
 async function runClaude(){
-  if(!getApiKey()){alert('Add your API key in Settings first.');return;}
-  const dump=document.getElementById('dump').value.trim(); if(!dump){alert('Add something first.');return;}
+  if(!getAnthropicKey()){ alert('Add your Anthropic API key in Settings first.'); return; }
+  const dump=document.getElementById('dump').value.trim(); if(!dump){ alert('Add something first.'); return; }
   const btn=document.getElementById('runBtn'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Thinking...';
   const out=document.getElementById('planOutput'); const txt=document.getElementById('planText');
   out.style.display='block'; txt.innerHTML='<span class="cursor-blink"></span>'; lastPlanText=''; let full='';
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':getApiKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      headers:{'Content-Type':'application/json','x-api-key':getAnthropicKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,stream:true,messages:[{role:'user',content:buildPrompt(dump,currentMode)}]})
     });
     const reader=res.body.getReader(); const dec=new TextDecoder();
     while(true){
       const{done,value}=await reader.read(); if(done) break;
-      for(const line of dec.decode(value).split('\n')){if(line.startsWith('data: ')){try{const p=JSON.parse(line.slice(6));if(p.delta?.text){full+=p.delta.text;txt.innerHTML=esc(full)+'<span class="cursor-blink"></span>';}}catch{}}}
+      for(const line of dec.decode(value).split('\n')){ if(line.startsWith('data: ')){try{const p=JSON.parse(line.slice(6));if(p.delta?.text){full+=p.delta.text;txt.innerHTML=esc(full)+'<span class="cursor-blink"></span>';}}catch{}} }
     }
     txt.innerHTML=esc(full); lastPlanText=full;
-  }catch(e){txt.textContent='⚠ Error. Check your API key in Settings.';}
+  }catch(e){ txt.textContent='⚠ Error. Check your API key in Settings.'; }
   btn.disabled=false; btn.textContent=currentMode==='weekly'?'→ Generate plan':currentMode==='focus'?'→ Tell me what to do':'→ Review & reflect';
 }
 
 function copyPlan(){ navigator.clipboard.writeText(document.getElementById('planText').textContent); }
 
 async function pushToAreas(){
-  if(!lastPlanText||!getApiKey()) return;
+  if(!lastPlanText||!getAnthropicKey()) return;
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':getApiKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,messages:[{role:'user',content:`From this weekly plan, infer health status for each area. Return ONLY JSON, no markdown. Format: {"areaId":{"status":"green"|"yellow"|"red"|"grey","momentum":0-100}}. Area IDs: ${AREAS.map(a=>a.id).join(', ')}. Plan:\n\n${lastPlanText}`}]})
+      headers:{'Content-Type':'application/json','x-api-key':getAnthropicKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,messages:[{role:'user',content:`From this weekly plan, infer health status for each area. Return ONLY JSON, no markdown. Format: {"areaId":{"status":"green"|"yellow"|"red"|"grey","momentum":0-100}}. Area IDs: ${areas.map(a=>a.id).join(', ')}. Plan:\n\n${lastPlanText}`}]})
     });
     const data=await res.json();
     const raw=(data.content[0]?.text||'').replace(/```json|```/g,'').trim();
     const updates=JSON.parse(raw);
-    Object.entries(updates).forEach(([id,vals])=>{if(areaData[id]) areaData[id]={...areaData[id],...vals};});
-    save('alex_areas',areaData); renderDashboard(); switchTab('dashboard',document.querySelectorAll('.tab')[0]);
-  }catch(e){alert('Could not parse. Update dashboard manually.');}
+    Object.entries(updates).forEach(([id,vals])=>{ if(areaData[id]) areaData[id]={...areaData[id],...vals}; });
+    await saveAreaData(); renderDashboard(); switchTab('dashboard',document.querySelectorAll('.tab')[0]);
+  }catch(e){ alert('Could not parse. Update dashboard manually.'); }
 }
 
 // ===================== HABITS =====================
 function renderHabits(){
   const grid=document.getElementById('habitsGrid'); grid.innerHTML='';
-  if(!habits.length){grid.innerHTML='<p style="color:var(--muted);font-size:12px;padding:20px 0">No habits yet. Add one above.</p>';return;}
+  if(!habits.length){ grid.innerHTML='<p style="color:var(--muted);font-size:12px;padding:20px 0">No habits yet.</p>'; return; }
   habits.forEach(h=>{
-    const area=AREAS.find(a=>a.id===h.area);
+    const area=areas.find(a=>a.id===h.area);
     const done=(checkState[h.id]||[]).length; const total=h.tasks.length; const pct=total?Math.round(done/total*100):0;
     const card=document.createElement('div'); card.className='habit-card';
     const tasksHtml=h.tasks.map((t,i)=>{
@@ -598,24 +904,37 @@ function renderHabits(){
   });
 }
 
-function toggleCheck(hId,idx,el){
+async function toggleCheck(hId,idx,el){
   if(!checkState[hId]) checkState[hId]=[];
-  if(el.checked){if(!checkState[hId].includes(idx)) checkState[hId].push(idx);}
-  else{checkState[hId]=checkState[hId].filter(i=>i!==idx);}
+  if(el.checked){ if(!checkState[hId].includes(idx)) checkState[hId].push(idx); }
+  else{ checkState[hId]=checkState[hId].filter(i=>i!==idx); }
   const h=habits.find(x=>x.id===hId);
-  if(h&&checkState[hId].length===h.tasks.length){h.streak=(h.streak||0)+1;save('alex_habits',habits);}
-  save('alex_checks',checkState); renderHabits();
+  if(h&&checkState[hId].length===h.tasks.length){ h.streak=(h.streak||0)+1; await saveHabits(); }
+  renderHabits(); saveChecks();
 }
-function toggleAddHabit(){const f=document.getElementById('addHabitBox');f.style.display=f.style.display==='none'?'block':'none';}
-function saveHabit(){
+
+function toggleAddHabit(){ const f=document.getElementById('addHabitBox'); f.style.display=f.style.display==='none'?'block':'none'; }
+
+async function saveHabit(){
   const name=document.getElementById('newHabitName').value.trim();
   const area=document.getElementById('newHabitArea').value;
   const freq=document.getElementById('newHabitFreq').value;
-  if(!name){alert('Add a name.');return;}
+  if(!name){ alert('Add a name.'); return; }
   habits.push({id:'h'+Date.now(),name,area,freq,tasks:[name],streak:0});
-  save('alex_habits',habits); document.getElementById('newHabitName').value=''; toggleAddHabit(); renderHabits();
+  await saveHabits(); document.getElementById('newHabitName').value=''; toggleAddHabit(); renderHabits();
 }
-function deleteHabit(id){if(!confirm('Remove?'))return;habits=habits.filter(h=>h.id!==id);save('alex_habits',habits);renderHabits();}
+
+async function deleteHabit(id){
+  if(!confirm('Remove?')) return;
+  habits=habits.filter(h=>h.id!==id); await saveHabits(); renderHabits();
+}
+
+// ===================== RESET =====================
+async function resetData(){
+  if(!confirm('Reset ALL dashboard data? Connection and API keys are kept.')) return;
+  await Promise.all(['areas','area_data','habits','check_state','active_areas'].map(k=>dbSet(k,null)));
+  location.reload();
+}
 
 // ===================== UTILS =====================
 function switchTab(name,el){
@@ -623,7 +942,7 @@ function switchTab(name,el){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active'); el.classList.add('active');
 }
-function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 init();
 </script>
